@@ -26,7 +26,21 @@ class TaskUpdateSchema(BaseModel):
     title: str | None = None
     completed: bool | None = None
 
+
+class CategorySchema(BaseModel):
+    id: str
+    name: str
+
+class CategoryCreateSchema(BaseModel):
+    name: str    
+
+class CategoryUpdateSchema(BaseModel):
+    name: str | None = None
+
+
 tasks: list[TaskSchema] = []
+categories: list[CategorySchema] = []
+
 
 @app.get("/tasks")
 def read_tasks() -> list[TaskSchema]:
@@ -59,3 +73,34 @@ def delete_task(task_id: str) -> None:
             return
 
     raise ValueError("Task not found")
+
+
+@app.get("/categories")
+def read_categories() -> list[CategorySchema]:
+    return categories
+
+@app.post("/categories", status_code=status.HTTP_201_CREATED)
+def create_category(payload: CategoryCreateSchema) -> CategorySchema:
+    new_category = CategorySchema(id=str(uuid4()), name=payload.name)
+
+    categories.append(new_category)
+    return new_category
+
+@app.patch("/categories/{category_id}")
+def update_category(payload: CategoryUpdateSchema, category_id: str) -> CategorySchema:
+    for category in categories:
+        if category.id == category_id:
+            if payload.name is not None:
+                category.name = payload.name
+            return category
+
+    raise ValueError("Category not found")
+
+@app.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_category(category_id: str) -> None:
+    for i, category in enumerate(categories):
+        if category.id == category_id:
+            del categories[i]
+            return
+
+    raise ValueError("Category not found")
