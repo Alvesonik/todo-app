@@ -21,17 +21,18 @@ class TaskService:
         self.db.commit()
         return TaskSchema.model_validate(task_orm)
 
-    def update_task(self, task_id: str, task_update: TaskUpdateSchema) -> TaskSchema | None:
+    def update_task(self, task_id: str, task_update: TaskUpdateSchema) -> TaskSchema:
         task_for_update = self.task_repository.get_by_id(task_id=task_id)
         if not task_for_update:
             raise TaskNotFound(f"Задача с id {task_id} не найдена")
+        # Получаем только те поля, которые реально пришли в запросе
+        update_data = task_update.model_dump(exclude_unset=True)
 
-        if task_for_update.title is not None:
-            task_for_update.title = task_update.title
-        if task_for_update.completed is not None:
-            task_for_update.completed = task_update.completed
+        for field, value in update_data.items():
+            setattr(task_for_update, field, value)
 
         self.db.commit() 
+        self.db.refresh(task_for_update)
         return TaskSchema.model_validate(task_for_update)       
 
     def delete_task(self, task_id: str) ->TaskSchema:
