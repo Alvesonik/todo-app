@@ -1,17 +1,20 @@
 
-from sqlalchemy.orm import Session, sessionmaker 
-from sqlalchemy import create_engine
-from app.core.config import Settings
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    async_sessionmaker,
+    AsyncSession,
+)
+from app.core.config import settings
 
-settings = Settings()
-engine = create_engine(settings.DATABASE_URL)
-Sessionlocal = sessionmaker[Session](bind=engine)
+engine = create_async_engine(settings.DATABASE_URL)
 
+# Фабрика async сессий
+SessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
 
-def get_db():
-    """Функция для инъекции сессии БД"""
-    db = Sessionlocal()
-    try:
+async def get_db():
+    async with SessionLocal() as db:
         yield db
-    finally:
-        db.close()
